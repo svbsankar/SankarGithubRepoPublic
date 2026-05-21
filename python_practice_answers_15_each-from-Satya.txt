@@ -1,0 +1,1355 @@
+Python Practice Answers (15 per topic)
+
+=== Variables & types ===
+1. Explain the difference between `==` and `is`. When should you use each?
+`==` compares **values**; `is` compares **object identity**.
+
+```python
+a = [1, 2]
+b = [1, 2]
+print(a == b)  # True
+print(a is b)  # False
+```
+
+Use `is` for singletons like `None`:
+```python
+x = None
+print(x is None)  # True
+```
+----------------------------------------------------------------------
+2. What is Python’s dynamic typing? Show an example where a variable changes type.
+Python variables are **names** bound to objects; the same name can reference objects of different types.
+
+```python
+x = 10        # int
+x = "ten"     # str
+x = [1, 2, 3] # list
+```
+----------------------------------------------------------------------
+3. Show how to convert `'10'`, `'10.5'`, and `'True'` into `int`, `float`, and `bool` (careful!).
+```python
+int("10")      # 10
+float("10.5")  # 10.5
+bool("True")   # True  (ANY non-empty string is True!)
+```
+If you want real boolean parsing:
+```python
+s = "True"
+b = s.strip().lower() in ("true", "1", "yes", "y")
+```
+----------------------------------------------------------------------
+4. What is truthiness? List values that are falsy in Python and demonstrate with code.
+Falsy values include: `False`, `None`, `0`, `0.0`, `''`, `[]`, `{}`, `set()`, and objects with `__len__ == 0`.
+
+```python
+for v in [False, None, 0, "", [], {}, set(), "0", [0]]:
+    print(v, "->", bool(v))
+```
+----------------------------------------------------------------------
+5. Explain integer division `//` vs true division `/` with examples.
+```python
+print(7 / 2)   # 3.5  (float)
+print(7 // 2)  # 3    (floor division)
+print(-7 // 2) # -4   (floors toward -inf)
+```
+----------------------------------------------------------------------
+6. What’s the difference between `list(a)` and `a.copy()` and `copy.deepcopy(a)`? When do you need deep copy?
+- `list(a)` and `a.copy()` make a **shallow copy** (nested objects are shared).
+- `copy.deepcopy(a)` copies nested objects too.
+
+```python
+import copy
+a = [[1], [2]]
+b = a.copy()           # shallow
+c = copy.deepcopy(a)   # deep
+a[0].append(99)
+print(b)  # [[1, 99], [2]]  (changed!)
+print(c)  # [[1], [2]]
+```
+----------------------------------------------------------------------
+7. Explain `None` vs `0` vs `''`. Why can’t you use them interchangeably?
+They mean different things:
+- `None`: “no value / missing”
+- `0`: numeric zero
+- `''`: empty string
+
+```python
+print(None == 0)   # False
+print("" == 0)     # False
+print(bool(None), bool(0), bool(""))  # False False False
+```
+----------------------------------------------------------------------
+8. What are `bytes` vs `str`? Show encoding and decoding with UTF‑8.
+`str` is text (Unicode). `bytes` is raw binary data.
+
+```python
+s = "café"
+b = s.encode("utf-8")
+print(b)                 # b'caf\xc3\xa9'
+print(b.decode("utf-8")) # 'café'
+```
+----------------------------------------------------------------------
+9. Demonstrate multiple assignment and unpacking. What error happens if counts don’t match?
+```python
+a, b = 1, 2
+x, y, z = [10, 20, 30]
+# x, y = [1, 2, 3]  # ValueError: too many values to unpack
+```
+----------------------------------------------------------------------
+10. Explain `id()` and `type()`. Use them to show two variables referencing the same object.
+```python
+a = [1, 2]
+b = a
+print(type(a))       # <class 'list'>
+print(id(a) == id(b))# True (same object)
+```
+----------------------------------------------------------------------
+11. What is the difference between `+=` on a list vs on a tuple? Show with code.
+`list` can be modified in-place; `tuple` creates a new tuple.
+
+```python
+lst = [1, 2]
+lst += [3]
+print(lst)  # [1, 2, 3]
+
+t = (1, 2)
+t += (3,)
+print(t)    # (1, 2, 3)
+```
+----------------------------------------------------------------------
+12. How does Python represent large integers? Is there overflow like in Java int?
+Python `int` has arbitrary precision (it grows as needed), so it doesn’t overflow like fixed-width integers.
+
+```python
+x = 10**100
+print(len(str(x)))  # 101 digits
+```
+----------------------------------------------------------------------
+13. What is `Decimal` and why would you use it instead of float for money?
+Floats are binary and can’t represent some decimals exactly. `Decimal` stores exact decimal values.
+
+```python
+from decimal import Decimal
+print(0.1 + 0.2)                 # 0.30000000000000004
+print(Decimal("0.1")+Decimal("0.2"))  # 0.3
+```
+----------------------------------------------------------------------
+14. What does `repr()` vs `str()` mean? Show an example with strings containing newlines.
+`str()` is user-friendly; `repr()` is developer/debug representation.
+
+```python
+s = "a\nb"
+print(str(s))   # prints with newline
+print(repr(s))  # 'a\nb'
+```
+----------------------------------------------------------------------
+15. Explain mutability with function arguments: why can a function modify a list passed in?
+Because the function receives a reference to the same list object.
+
+```python
+def add_one(lst):
+    lst.append(1)
+
+a = []
+add_one(a)
+print(a)  # [1]
+```
+----------------------------------------------------------------------
+
+=== Conditions & loops ===
+16. Write a function that returns `'positive'`, `'negative'`, or `'zero'` for a number.
+```python
+def sign(n):
+    if n > 0:
+        return "positive"
+    elif n < 0:
+        return "negative"
+    return "zero"
+```
+----------------------------------------------------------------------
+17. Implement leap year check (Gregorian rules).
+```python
+def is_leap(y):
+    return (y % 4 == 0 and y % 100 != 0) or (y % 400 == 0)
+```
+----------------------------------------------------------------------
+18. Find the first negative number in a list and stop early. Return `None` if not found.
+```python
+def first_negative(nums):
+    for n in nums:
+        if n < 0:
+            return n
+    return None
+```
+----------------------------------------------------------------------
+19. Explain `break`, `continue`, and `pass` with tiny examples.
+```python
+for n in range(5):
+    if n == 1: 
+        continue  # skip 1
+    if n == 3:
+        break     # stop at 3
+    print(n)      # 0,2
+```
+`pass` is a no-op placeholder:
+```python
+if True:
+    pass
+```
+----------------------------------------------------------------------
+20. Use a `while` loop to compute the sum of digits of an integer (e.g., 123 -> 6).
+```python
+def sum_digits(n):
+    n = abs(n)
+    s = 0
+    while n:
+        s += n % 10
+        n //= 10
+    return s
+```
+----------------------------------------------------------------------
+21. Explain the `for ... else` construct and give an example (e.g., primality test).
+`else` runs only if the loop **did not break**.
+
+```python
+def is_prime(n):
+    if n < 2:
+        return False
+    for i in range(2, int(n**0.5) + 1):
+        if n % i == 0:
+            break
+    else:
+        return True
+    return False
+```
+----------------------------------------------------------------------
+22. Write a loop that counts how many numbers in a list are even and how many are odd.
+```python
+def even_odd_count(nums):
+    even = odd = 0
+    for n in nums:
+        if n % 2 == 0:
+            even += 1
+        else:
+            odd += 1
+    return even, odd
+```
+----------------------------------------------------------------------
+23. Use `enumerate()` to print index and value for each element of a list.
+```python
+items = ["a", "b", "c"]
+for i, v in enumerate(items):
+    print(i, v)
+```
+----------------------------------------------------------------------
+24. Use `zip()` to iterate over two lists in parallel and produce pair sums.
+```python
+a = [1, 2, 3]
+b = [10, 20, 30]
+sums = []
+for x, y in zip(a, b):
+    sums.append(x + y)
+print(sums)  # [11, 22, 33]
+```
+----------------------------------------------------------------------
+25. What’s the difference between `range(5)`, `range(1,5)`, and `range(1,10,2)`?
+- `range(5)` → 0..4
+- `range(1,5)` → 1..4
+- `range(1,10,2)` → 1,3,5,7,9
+
+```python
+print(list(range(5)))
+print(list(range(1, 5)))
+print(list(range(1, 10, 2)))
+```
+----------------------------------------------------------------------
+26. Rewrite an `if/else` statement using a ternary operator.
+```python
+x = 10
+msg = "big" if x > 5 else "small"
+```
+----------------------------------------------------------------------
+27. Write code to validate a password string: length >= 8 and contains at least one digit.
+```python
+def valid_pwd(p):
+    return len(p) >= 8 and any(ch.isdigit() for ch in p)
+```
+----------------------------------------------------------------------
+28. Use nested loops to build all coordinate pairs (x,y) for x in [0..2], y in [0..1].
+```python
+pairs = []
+for x in range(3):
+    for y in range(2):
+        pairs.append((x, y))
+print(pairs)  # [(0,0),(0,1),(1,0),(1,1),(2,0),(2,1)]
+```
+----------------------------------------------------------------------
+29. Explain short-circuiting with `and` / `or`. Show a case where it avoids an error.
+`and/or` may skip evaluating the right-hand side.
+
+```python
+s = ""
+# Avoids IndexError because left side is False, so right side isn't evaluated:
+ok = bool(s) and (s[0] == "A")
+print(ok)  # False
+```
+----------------------------------------------------------------------
+30. Given a list, compute the running cumulative sum using a loop.
+```python
+def cumulative(nums):
+    out = []
+    total = 0
+    for n in nums:
+        total += n
+        out.append(total)
+    return out
+```
+----------------------------------------------------------------------
+
+=== Function basics ===
+31. Write `greet(name, greeting='Hello')` and call it using positional and keyword arguments.
+```python
+def greet(name, greeting="Hello"):
+    return f"{greeting}, {name}!"
+
+greet("Atul")
+greet("Atul", "Hi")
+greet(name="Atul", greeting="Hey")
+```
+----------------------------------------------------------------------
+32. Explain the default-mutable-argument pitfall. Show the correct pattern.
+Bad:
+```python
+def f(x, acc=[]):
+    acc.append(x)
+    return acc
+```
+Fix:
+```python
+def f(x, acc=None):
+    if acc is None:
+        acc = []
+    acc.append(x)
+    return acc
+```
+----------------------------------------------------------------------
+33. What are `*args` and `**kwargs`? Write a function that accepts any arguments and prints them.
+```python
+def debug(*args, **kwargs):
+    print("args:", args)
+    print("kwargs:", kwargs)
+
+debug(1, 2, a=10, b=20)
+```
+----------------------------------------------------------------------
+34. Write a function `mean(*nums)` that returns the average. Raise `ValueError` if no numbers are passed.
+```python
+def mean(*nums):
+    if not nums:
+        raise ValueError("need at least one number")
+    return sum(nums) / len(nums)
+```
+----------------------------------------------------------------------
+35. Explain local vs global scope. Demonstrate `global`.
+```python
+x = 0
+def inc():
+    global x
+    x += 1
+
+inc()
+print(x)  # 1
+```
+----------------------------------------------------------------------
+36. Explain closures: write `make_multiplier(k)` that returns a function multiplying by `k`.
+```python
+def make_multiplier(k):
+    def mul(x):
+        return x * k
+    return mul
+
+times3 = make_multiplier(3)
+print(times3(10))  # 30
+```
+----------------------------------------------------------------------
+37. What is `nonlocal`? Show a nested function that increments an outer variable.
+```python
+def counter():
+    n = 0
+    def inc():
+        nonlocal n
+        n += 1
+        return n
+    return inc
+
+c = counter()
+print(c(), c(), c())  # 1 2 3
+```
+----------------------------------------------------------------------
+38. Write a recursive function `factorial(n)` with input validation.
+```python
+def factorial(n):
+    if not isinstance(n, int) or n < 0:
+        raise ValueError("n must be a non-negative int")
+    if n in (0, 1):
+        return 1
+    return n * factorial(n - 1)
+```
+----------------------------------------------------------------------
+39. Explain docstrings. Add a docstring to a function and show how to access it.
+```python
+def add(a, b):
+    """Return the sum of a and b."""
+    return a + b
+
+print(add.__doc__)
+```
+----------------------------------------------------------------------
+40. What are type hints? Add hints to a function and explain what they do (and don’t do).
+```python
+def area(radius: float) -> float:
+    return 3.14159 * radius * radius
+```
+Hints help tooling/readability; Python does not enforce them at runtime (unless you add checks).
+----------------------------------------------------------------------
+41. Explain positional-only and keyword-only parameters using `/` and `*`.
+```python
+def f(a, b, /, c, *, d):
+    return a, b, c, d
+
+f(1, 2, 3, d=4)  # ok
+# f(a=1, b=2, c=3, d=4)  # TypeError (a,b positional-only)
+# f(1,2,3,4)             # TypeError (d keyword-only)
+```
+----------------------------------------------------------------------
+42. Write a simple decorator `timer` that prints how long a function took.
+```python
+import time
+from functools import wraps
+
+def timer(fn):
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        start = time.perf_counter()
+        out = fn(*args, **kwargs)
+        dur = time.perf_counter() - start
+        print(f"{fn.__name__} took {dur:.6f}s")
+        return out
+    return wrapper
+```
+----------------------------------------------------------------------
+43. Explain `return` vs `print`. Why is returning usually better for reusable code?
+`print` only displays output; `return` gives a value back to the caller for reuse/testing.
+
+```python
+def f(x):
+    return x * 2   # reusable
+
+y = f(10)
+```
+----------------------------------------------------------------------
+44. Write a function that accepts a callback: `apply_twice(fn, x)` returns `fn(fn(x))`.
+```python
+def apply_twice(fn, x):
+    return fn(fn(x))
+
+print(apply_twice(lambda n: n + 1, 10))  # 12
+```
+----------------------------------------------------------------------
+45. Explain exception handling inside functions: write `safe_int(s)` that returns int or `None`.
+```python
+def safe_int(s):
+    try:
+        return int(s)
+    except (TypeError, ValueError):
+        return None
+```
+----------------------------------------------------------------------
+
+=== Lambda usage ===
+46. Sort a list of `(name, age)` by age descending then name ascending using `sorted(..., key=...)`.
+```python
+people = [("Zara", 30), ("Amit", 25), ("Amit", 30)]
+out = sorted(people, key=lambda x: (-x[1], x[0]))
+```
+----------------------------------------------------------------------
+47. Use `map` with lambda to convert `['1','2','3']` into `[1,2,3]`.
+```python
+nums = list(map(lambda s: int(s), ["1", "2", "3"]))
+```
+----------------------------------------------------------------------
+48. Use `filter` with lambda to keep only strings longer than 3 characters.
+```python
+words = ["a", "data", "py", "python"]
+out = list(filter(lambda w: len(w) > 3, words))  # ['data','python']
+```
+----------------------------------------------------------------------
+49. Use `reduce` with lambda to multiply numbers in a list. (Hint: `functools.reduce`)
+```python
+from functools import reduce
+nums = [1, 2, 3, 4]
+prod = reduce(lambda a, b: a * b, nums, 1)  # 24
+```
+----------------------------------------------------------------------
+50. Explain why lambdas are limited compared to `def` (one expression). Give an example where `def` is better.
+Lambda can only contain a single expression (no statements like `for`, `try`, `while`). Use `def` for multi-step logic, readability, docstrings.
+
+```python
+def parse_user(s):
+    s = s.strip()
+    if not s:
+        return None
+    return s.upper()
+```
+----------------------------------------------------------------------
+51. Use `max(items, key=...)` with a lambda to pick the longest word from a list.
+```python
+words = ["ai", "python", "dev"]
+longest = max(words, key=lambda w: len(w))  # 'python'
+```
+----------------------------------------------------------------------
+52. Group a list of numbers into evens and odds using `sorted(..., key=...)` and `itertools.groupby`.
+```python
+from itertools import groupby
+nums = [1,2,3,4,5,6]
+nums2 = sorted(nums, key=lambda n: n % 2)
+groups = {k: list(g) for k, g in groupby(nums2, key=lambda n: n % 2)}
+# key 0 -> evens, key 1 -> odds
+```
+----------------------------------------------------------------------
+53. Show the 'late binding' gotcha with lambdas in a loop and how to fix it.
+Gotcha:
+```python
+funcs = []
+for i in range(3):
+    funcs.append(lambda: i)
+print([f() for f in funcs])  # [2,2,2]
+```
+Fix (bind i as default arg):
+```python
+funcs = []
+for i in range(3):
+    funcs.append(lambda i=i: i)
+print([f() for f in funcs])  # [0,1,2]
+```
+----------------------------------------------------------------------
+54. Use a lambda as a `key` to sort a list of dicts by `'score'` descending.
+```python
+rows = [{"name":"A","score":10},{"name":"B","score":5}]
+out = sorted(rows, key=lambda d: d["score"], reverse=True)
+```
+----------------------------------------------------------------------
+55. Use lambda with `any()` to check if any number in a list is negative (via `map`).
+```python
+nums = [1, -2, 3]
+has_neg = any(map(lambda n: n < 0, nums))
+```
+----------------------------------------------------------------------
+56. Create a list of functions that each add a different constant (0..4) to x using lambdas (fix late binding).
+```python
+funcs = [lambda x, k=k: x + k for k in range(5)]
+print([f(10) for f in funcs])  # [10,11,12,13,14]
+```
+----------------------------------------------------------------------
+57. Use `sorted()` with a lambda to sort strings by their last character.
+```python
+words = ["cat", "dog", "apple"]
+out = sorted(words, key=lambda s: s[-1])  # ['apple','dog','cat']
+```
+----------------------------------------------------------------------
+58. Write a lambda that safely reads a dict key with default 0 (use `dict.get`).
+```python
+get_score = lambda d: d.get("score", 0)
+```
+----------------------------------------------------------------------
+59. Use a lambda to create a transformation pipeline: strip + lower for strings using `map`.
+```python
+raw = ["  Hi ", " PYTHON ", ""]
+out = list(map(lambda s: s.strip().lower(), raw))  # ['hi','python','']
+```
+----------------------------------------------------------------------
+60. Explain when you should avoid lambdas and prefer named functions.
+Avoid lambdas when logic is non-trivial, repeated, or needs documentation/testing clarity. A named `def` is easier to read, reuse, and debug.
+----------------------------------------------------------------------
+
+=== Lists & tuples ===
+61. Remove duplicates from a list while preserving order.
+```python
+def unique(seq):
+    seen = set()
+    out = []
+    for x in seq:
+        if x not in seen:
+            seen.add(x)
+            out.append(x)
+    return out
+```
+----------------------------------------------------------------------
+62. Explain slicing: what do `a[:3]`, `a[1:4]`, `a[::-1]` do?
+```python
+a = [10,20,30,40,50]
+a[:3]   # [10,20,30]
+a[1:4]  # [20,30,40]
+a[::-1] # [50,40,30,20,10]
+```
+----------------------------------------------------------------------
+63. What’s the difference between `append` and `extend`? Show with a list example.
+```python
+a = [1,2]
+a.append([3,4])   # [1,2,[3,4]]
+b = [1,2]
+b.extend([3,4])   # [1,2,3,4]
+```
+----------------------------------------------------------------------
+64. How do you make a shallow copy of a list? Show three ways.
+```python
+a = [1,2,3]
+b = a.copy()
+c = list(a)
+d = a[:]
+```
+----------------------------------------------------------------------
+65. Explain why `[[0]*3]*2` is dangerous for 2D lists. Provide the correct way.
+Bad (rows share same inner list):
+```python
+m = [[0]*3]*2
+m[0][0] = 9
+print(m)  # [[9,0,0],[9,0,0]]
+```
+Correct:
+```python
+m = [[0]*3 for _ in range(2)]
+```
+----------------------------------------------------------------------
+66. Unpack a tuple `(name, age)` and swap variables without a temp.
+```python
+name, age = ("Atul", 30)
+a, b = 1, 2
+a, b = b, a
+```
+----------------------------------------------------------------------
+67. Sort a list in-place vs returning a sorted copy (`.sort()` vs `sorted()`).
+```python
+a = [3,1,2]
+b = sorted(a)  # new list
+a.sort()       # modifies a
+```
+----------------------------------------------------------------------
+68. Find the second largest number in a list without sorting the entire list.
+```python
+def second_largest(nums):
+    first = second = float("-inf")
+    for n in nums:
+        if n > first:
+            first, second = n, first
+        elif first > n > second:
+            second = n
+    return second if second != float("-inf") else None
+```
+----------------------------------------------------------------------
+69. Explain tuple immutability: how can a tuple contain a mutable object that can change?
+The tuple’s **references** are immutable, but referenced objects may be mutable.
+
+```python
+t = ([1,2], 99)
+t[0].append(3)
+print(t)  # ([1,2,3], 99)
+```
+----------------------------------------------------------------------
+70. Use `enumerate()` to replace all negative values in a list with 0 (in-place).
+```python
+nums = [2, -1, 5, -3]
+for i, v in enumerate(nums):
+    if v < 0:
+        nums[i] = 0
+```
+----------------------------------------------------------------------
+71. Implement a simple stack using a list (push/pop).
+```python
+stack = []
+stack.append(10)  # push
+stack.append(20)
+x = stack.pop()   # pop -> 20
+```
+----------------------------------------------------------------------
+72. Implement a queue using `collections.deque` and explain why list is slower for pops from left.
+```python
+from collections import deque
+q = deque()
+q.append("a")
+q.append("b")
+q.popleft()  # O(1)
+```
+`list.pop(0)` is O(n) because it shifts all elements.
+----------------------------------------------------------------------
+73. Given two lists, compute their intersection while preserving order from the first list.
+```python
+def ordered_intersection(a, b):
+    bset = set(b)
+    return [x for x in a if x in bset]
+```
+----------------------------------------------------------------------
+74. Show how to use `*` unpacking to combine lists: `[1,2] + [3]` and `[ *a, *b ]`.
+```python
+a = [1,2]
+b = [3,4]
+c1 = a + b
+c2 = [*a, *b]
+```
+----------------------------------------------------------------------
+75. Explain `tuple` packing/unpacking and why tuples are useful as dict keys.
+Tuples can be used as keys because they are hashable (if all elements are hashable).
+
+```python
+d = {(10, 20): "point"}
+print(d[(10, 20)])
+```
+----------------------------------------------------------------------
+
+=== Dictionaries ===
+76. Build a word-frequency dictionary from a sentence (case-insensitive).
+```python
+import re
+from collections import Counter
+
+s = "Hello hello world"
+words = re.findall(r"[a-zA-Z']+", s.lower())
+freq = Counter(words)
+```
+----------------------------------------------------------------------
+77. What’s the difference between `d[key]` and `d.get(key, default)`?
+`d[key]` raises `KeyError` if missing; `get` returns default (or `None`).
+
+```python
+d = {"a": 1}
+d.get("b", 0)  # 0
+```
+----------------------------------------------------------------------
+78. Merge dicts `a` and `b` and sum values for overlapping keys.
+```python
+def merge_sum(a, b):
+    out = dict(a)
+    for k, v in b.items():
+        out[k] = out.get(k, 0) + v
+    return out
+```
+----------------------------------------------------------------------
+79. Explain `setdefault`. Use it to group words by their first letter.
+```python
+words = ["apple", "ant", "banana"]
+groups = {}
+for w in words:
+    groups.setdefault(w[0], []).append(w)
+```
+----------------------------------------------------------------------
+80. Use `defaultdict(list)` to group strings by length.
+```python
+from collections import defaultdict
+words = ["a", "to", "bee", "home"]
+g = defaultdict(list)
+for w in words:
+    g[len(w)].append(w)
+```
+----------------------------------------------------------------------
+81. Write a dict comprehension that maps numbers 1..5 to their squares.
+```python
+sq = {n: n*n for n in range(1, 6)}
+```
+----------------------------------------------------------------------
+82. Invert a dictionary (values become keys). What condition must hold for it to be safe?
+Values must be unique and hashable.
+
+```python
+d = {"a": 1, "b": 2}
+inv = {v: k for k, v in d.items()}
+```
+----------------------------------------------------------------------
+83. Explain `keys()`, `values()`, `items()` views. Show that they reflect changes to the dict.
+```python
+d = {"a": 1}
+items = d.items()
+d["b"] = 2
+print(list(items))  # now includes ('b',2)
+```
+----------------------------------------------------------------------
+84. Sort dictionary items by value descending and return a list of `(k,v)` pairs.
+```python
+d = {"a": 2, "b": 5, "c": 1}
+out = sorted(d.items(), key=lambda kv: kv[1], reverse=True)
+```
+----------------------------------------------------------------------
+85. Count characters in a string using a dict (without Counter).
+```python
+s = "banana"
+counts = {}
+for ch in s:
+    counts[ch] = counts.get(ch, 0) + 1
+```
+----------------------------------------------------------------------
+86. Update nested dictionaries: add a new user record into `users[user_id] = {...}` safely.
+```python
+users = {}
+uid = "u1"
+users[uid] = {"name": "Atul", "age": 30}
+```
+----------------------------------------------------------------------
+87. Explain shallow copy for dict: `d.copy()` vs `copy.deepcopy(d)` with nested dict.
+```python
+import copy
+d = {"a": {"x": 1}}
+sh = d.copy()
+dp = copy.deepcopy(d)
+d["a"]["x"] = 99
+print(sh["a"]["x"])  # 99 (shared)
+print(dp["a"]["x"])  # 1
+```
+----------------------------------------------------------------------
+88. Use `pop`, `popitem`, and `del` to remove keys. What are the differences?
+- `pop(key, default)` removes and returns value.
+- `popitem()` removes and returns the **last inserted** (Py 3.7+).
+- `del d[key]` removes key (KeyError if missing).
+----------------------------------------------------------------------
+89. Implement an LRU-like behavior using insertion order: move a key to the end after access.
+```python
+d = {"a": 1, "b": 2, "c": 3}
+v = d.pop("b")
+d["b"] = v   # re-insert at end
+```
+----------------------------------------------------------------------
+90. Explain why dict keys must be hashable. Give examples of valid and invalid keys.
+Valid: `str`, `int`, `tuple`(hashable contents). Invalid: `list`, `dict`, `set`.
+
+```python
+d = {("x", 1): "ok"}
+# d[[1,2]] = "no"  # TypeError: unhashable type: 'list'
+```
+----------------------------------------------------------------------
+
+=== File reading ===
+91. Read a text file line-by-line and count non-empty (non-whitespace) lines.
+```python
+def count_non_empty(path):
+    c = 0
+    with open(path, "r", encoding="utf-8") as f:
+        for line in f:
+            if line.strip():
+                c += 1
+    return c
+```
+----------------------------------------------------------------------
+92. Explain why `with open(...) as f:` is preferred over manual open/close.
+`with` ensures the file is closed even if an exception occurs, preventing leaks and locks.
+----------------------------------------------------------------------
+93. Read an entire file as a string vs as a list of lines. Show both.
+```python
+with open("a.txt", "r", encoding="utf-8") as f:
+    text = f.read()
+
+with open("a.txt", "r", encoding="utf-8") as f:
+    lines = f.readlines()
+```
+----------------------------------------------------------------------
+94. Write to a file (overwrite) and append to a file. Show modes.
+```python
+with open("out.txt", "w", encoding="utf-8") as f:
+    f.write("hello\n")
+
+with open("out.txt", "a", encoding="utf-8") as f:
+    f.write("more\n")
+```
+----------------------------------------------------------------------
+95. Read a CSV file using `csv.DictReader` and print each row’s `'name'` column.
+```python
+import csv
+with open("data.csv", newline="", encoding="utf-8") as f:
+    for row in csv.DictReader(f):
+        print(row["name"])
+```
+----------------------------------------------------------------------
+96. Write a list of dicts to a CSV file using `csv.DictWriter`.
+```python
+import csv
+rows = [{"name":"A", "age":1}, {"name":"B", "age":2}]
+with open("out.csv", "w", newline="", encoding="utf-8") as f:
+    w = csv.DictWriter(f, fieldnames=["name","age"])
+    w.writeheader()
+    w.writerows(rows)
+```
+----------------------------------------------------------------------
+97. Read a JSON file into Python and write a Python object back to JSON.
+```python
+import json
+with open("data.json", "r", encoding="utf-8") as f:
+    obj = json.load(f)
+
+with open("out.json", "w", encoding="utf-8") as f:
+    json.dump(obj, f, indent=2)
+```
+----------------------------------------------------------------------
+98. Explain file encodings. What happens if you open a UTF‑8 file with the wrong encoding?
+You may get `UnicodeDecodeError` or garbled text. Specify encoding explicitly when possible:
+```python
+open("file.txt", encoding="utf-8")
+```
+----------------------------------------------------------------------
+99. Use `pathlib.Path` to list all `.txt` files in a directory.
+```python
+from pathlib import Path
+txts = list(Path(".").glob("*.txt"))
+```
+----------------------------------------------------------------------
+100. Use `try/except` to handle file-not-found gracefully and return an empty string.
+```python
+def read_text(path):
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return f.read()
+    except FileNotFoundError:
+        return ""
+```
+----------------------------------------------------------------------
+101. Explain `seek()` and `tell()` with a small example.
+```python
+with open("a.txt", "r", encoding="utf-8") as f:
+    pos0 = f.tell()
+    chunk = f.read(5)
+    f.seek(0)
+    again = f.read(5)
+```
+----------------------------------------------------------------------
+102. Read a large file efficiently. Why is iterating line-by-line better than `readlines()`?
+Line iteration streams data; `readlines()` loads all lines into memory, which can be huge.
+----------------------------------------------------------------------
+103. Write a function that copies one file to another in chunks (binary-safe).
+```python
+def copy_file(src, dst, buf=1024*1024):
+    with open(src, "rb") as fin, open(dst, "wb") as fout:
+        while True:
+            chunk = fin.read(buf)
+            if not chunk:
+                break
+            fout.write(chunk)
+```
+----------------------------------------------------------------------
+104. Explain text mode vs binary mode (`'r'` vs `'rb'`). When do you need binary?
+Binary mode is used for non-text data (images, PDFs) and avoids newline/encoding transformations.
+----------------------------------------------------------------------
+105. Parse a log file and extract only lines containing the word `ERROR` into a list.
+```python
+def error_lines(path):
+    out = []
+    with open(path, "r", encoding="utf-8") as f:
+        for line in f:
+            if "ERROR" in line:
+                out.append(line.rstrip("\n"))
+    return out
+```
+----------------------------------------------------------------------
+
+=== List comprehensions ===
+106. Convert a loop that squares multiples of 3 in 1..20 into a list comprehension.
+```python
+res = [n*n for n in range(1, 21) if n % 3 == 0]
+```
+----------------------------------------------------------------------
+107. Flatten a 2D list `matrix` into a 1D list using a comprehension.
+```python
+flat = [x for row in matrix for x in row]
+```
+----------------------------------------------------------------------
+108. Create a list of `(index, value)` pairs from a list using a comprehension.
+```python
+a = ["x", "y"]
+pairs = [(i, v) for i, v in enumerate(a)]
+```
+----------------------------------------------------------------------
+109. Filter out empty strings and strip whitespace from the remaining ones in one comprehension.
+```python
+raw = ["  a ", "", "  ", "b"]
+out = [s.strip() for s in raw if s.strip()]
+```
+----------------------------------------------------------------------
+110. Create a list of all vowels found in a string (including duplicates).
+```python
+s = "hello world"
+vowels = [ch for ch in s if ch in "aeiou"]
+```
+----------------------------------------------------------------------
+111. Use a nested comprehension to generate all (x,y) pairs for x in 0..2, y in 0..1.
+```python
+pairs = [(x, y) for x in range(3) for y in range(2)]
+```
+----------------------------------------------------------------------
+112. Create a list of lengths of words: `['hi','python'] -> [2,6]` using a comprehension.
+```python
+words = ["hi", "python"]
+lens = [len(w) for w in words]
+```
+----------------------------------------------------------------------
+113. Explain the difference between a list comprehension and a generator expression.
+List comprehension builds a list immediately: `[... for ...]`.
+Generator expression yields lazily: `(... for ...)` (memory efficient).
+----------------------------------------------------------------------
+114. Write a dict comprehension from a list of `(k,v)` pairs, keeping only values > 10.
+```python
+pairs = [("a", 5), ("b", 12)]
+d = {k: v for k, v in pairs if v > 10}
+```
+----------------------------------------------------------------------
+115. Write a set comprehension that extracts unique lowercase words from a list.
+```python
+words = ["Hi", "hi", "Python"]
+s = {w.lower() for w in words}
+```
+----------------------------------------------------------------------
+116. Rewrite `map(str, nums)` using a comprehension.
+```python
+nums = [1, 2, 3]
+out = [str(n) for n in nums]
+```
+----------------------------------------------------------------------
+117. Use comprehension to replace negatives with 0: `[-1,2,-3] -> [0,2,0]`.
+```python
+nums = [-1, 2, -3]
+out = [n if n >= 0 else 0 for n in nums]
+```
+----------------------------------------------------------------------
+118. Generate a list of tuples `(n, n*n)` for n in 1..5.
+```python
+out = [(n, n*n) for n in range(1, 6)]
+```
+----------------------------------------------------------------------
+119. Explain why side effects inside comprehensions are discouraged. Give a better alternative.
+Comprehensions are meant for creating collections, not performing actions.
+Better: use a `for` loop for side effects like printing or appending to external structures.
+----------------------------------------------------------------------
+120. Given a list of dicts, build a list of names where `active` is True.
+```python
+rows = [{"name":"A","active":True},{"name":"B","active":False}]
+names = [r["name"] for r in rows if r.get("active")]
+```
+----------------------------------------------------------------------
+
+=== Generator functions ===
+121. Write a generator `countdown(n)` that yields n..1.
+```python
+def countdown(n):
+    while n > 0:
+        yield n
+        n -= 1
+```
+----------------------------------------------------------------------
+122. Explain `yield` vs `return` in a generator.
+`yield` produces a value and pauses state; `return` stops iteration (raises `StopIteration`).
+----------------------------------------------------------------------
+123. Create an infinite generator of natural numbers starting at 1. How do you stop safely?
+```python
+def naturals():
+    n = 1
+    while True:
+        yield n
+        n += 1
+
+# stop using itertools.islice or a break
+```
+----------------------------------------------------------------------
+124. Use `itertools.islice` to take the first 5 values from an infinite generator.
+```python
+from itertools import islice
+print(list(islice(naturals(), 5)))  # [1,2,3,4,5]
+```
+----------------------------------------------------------------------
+125. Write a generator that reads a file lazily and yields stripped non-empty lines.
+```python
+def non_empty_lines(path):
+    with open(path, "r", encoding="utf-8") as f:
+        for line in f:
+            s = line.strip()
+            if s:
+                yield s
+```
+----------------------------------------------------------------------
+126. Explain what an iterator is. How are iterators related to generators?
+An iterator implements `__iter__()` and `__next__()`. Generators are a convenient way to create iterators.
+----------------------------------------------------------------------
+127. Create a generator `chunked(iterable, size)` that yields lists of length `size`.
+```python
+def chunked(it, size):
+    chunk = []
+    for x in it:
+        chunk.append(x)
+        if len(chunk) == size:
+            yield chunk
+            chunk = []
+    if chunk:
+        yield chunk
+```
+----------------------------------------------------------------------
+128. Use `yield from` to delegate to another generator. Show a tiny example.
+```python
+def g1():
+    yield 1
+    yield 2
+
+def g2():
+    yield 0
+    yield from g1()
+    yield 3
+
+print(list(g2()))  # [0,1,2,3]
+```
+----------------------------------------------------------------------
+129. Explain generator expressions: convert `[x*x for x in range(5)]` to a generator expression.
+```python
+gen = (x*x for x in range(5))
+```
+----------------------------------------------------------------------
+130. Demonstrate `next()` with a generator and handle `StopIteration`.
+```python
+g = (x for x in [1,2])
+print(next(g))  # 1
+print(next(g))  # 2
+try:
+    next(g)
+except StopIteration:
+    print("done")
+```
+----------------------------------------------------------------------
+131. Explain the memory advantage of generators with a large range example.
+Generators do not store all values at once.
+```python
+gen = (i*i for i in range(10**9))  # lazy
+```
+----------------------------------------------------------------------
+132. Write a generator `running_total(nums)` that yields cumulative sums.
+```python
+def running_total(nums):
+    total = 0
+    for n in nums:
+        total += n
+        yield total
+```
+----------------------------------------------------------------------
+133. Show how to chain two iterables using `itertools.chain` (similar to `yield from`).
+```python
+from itertools import chain
+out = list(chain([1,2], [3,4]))  # [1,2,3,4]
+```
+----------------------------------------------------------------------
+134. Explain `.send()` briefly: create a generator that can receive increments (advanced).
+```python
+def acc():
+    total = 0
+    while True:
+        inc = yield total
+        if inc is None:
+            inc = 0
+        total += inc
+
+g = acc()
+print(next(g))     # first yield -> 0
+print(g.send(5))   # 5
+print(g.send(2))   # 7
+```
+----------------------------------------------------------------------
+135. Write a generator that yields only unique items from an iterable while preserving order.
+```python
+def unique_gen(it):
+    seen = set()
+    for x in it:
+        if x not in seen:
+            seen.add(x)
+            yield x
+```
+----------------------------------------------------------------------
+
+=== OOPs concepts ===
+136. Create a `BankAccount` class with `deposit`, `withdraw`, and a read-only `balance` property.
+```python
+class BankAccount:
+    def __init__(self, initial=0):
+        if initial < 0:
+            raise ValueError("negative balance")
+        self._balance = initial
+
+    @property
+    def balance(self):
+        return self._balance
+
+    def deposit(self, amt):
+        if amt <= 0:
+            raise ValueError("deposit must be positive")
+        self._balance += amt
+
+    def withdraw(self, amt):
+        if amt <= 0:
+            raise ValueError("withdraw must be positive")
+        if amt > self._balance:
+            raise ValueError("insufficient funds")
+        self._balance -= amt
+```
+----------------------------------------------------------------------
+137. Explain instance variables vs class variables with an example.
+```python
+class Demo:
+    shared = 0   # class var
+    def __init__(self, x):
+        self.x = x  # instance var
+
+a = Demo(1); b = Demo(2)
+Demo.shared = 5
+```
+----------------------------------------------------------------------
+138. Demonstrate inheritance: `Animal.speak()` and `Dog` overriding `speak()`.
+```python
+class Animal:
+    def speak(self):
+        return "..."
+
+class Dog(Animal):
+    def speak(self):
+        return "Woof!"
+```
+----------------------------------------------------------------------
+139. Explain `super()` with a base `__init__` and subclass `__init__`.
+```python
+class A:
+    def __init__(self, name):
+        self.name = name
+
+class B(A):
+    def __init__(self, name, age):
+        super().__init__(name)
+        self.age = age
+```
+----------------------------------------------------------------------
+140. What is encapsulation in Python? Show how a leading underscore `_x` is used by convention.
+Python relies on convention:
+```python
+class C:
+    def __init__(self):
+        self._internal = 123  # 'private-ish' by convention
+```
+----------------------------------------------------------------------
+141. Create a `@classmethod` constructor `from_string('name,age')`.
+```python
+class Person:
+    def __init__(self, name, age):
+        self.name = name
+        self.age = age
+
+    @classmethod
+    def from_string(cls, s):
+        name, age = s.split(",")
+        return cls(name.strip(), int(age))
+```
+----------------------------------------------------------------------
+142. Explain `@staticmethod` vs `@classmethod`. Give a small example of each.
+- `@staticmethod`: no `self` or `cls`, just namespaced utility.
+- `@classmethod`: receives `cls`, can create instances or work with class state.
+
+```python
+class X:
+    @staticmethod
+    def add(a,b): return a+b
+    @classmethod
+    def make(cls): return cls()
+```
+----------------------------------------------------------------------
+143. Implement `__repr__` for a class so printing a list of objects is readable.
+```python
+class Point:
+    def __init__(self, x, y):
+        self.x, self.y = x, y
+    def __repr__(self):
+        return f"Point(x={self.x}, y={self.y})"
+```
+----------------------------------------------------------------------
+144. Explain composition vs inheritance with an example (e.g., `Car` has an `Engine`).
+Composition: build objects from other objects.
+```python
+class Engine: ...
+class Car:
+    def __init__(self, engine):
+        self.engine = engine
+```
+----------------------------------------------------------------------
+145. Use a `@property` with a setter to validate setting an attribute (e.g., `age >= 0`).
+```python
+class Person:
+    def __init__(self, age):
+        self.age = age
+
+    @property
+    def age(self):
+        return self._age
+
+    @age.setter
+    def age(self, v):
+        if v < 0:
+            raise ValueError("age must be >= 0")
+        self._age = v
+```
+----------------------------------------------------------------------
+146. Demonstrate polymorphism: write a function that calls `.area()` on different shapes.
+```python
+class Circle:
+    def __init__(self, r): self.r = r
+    def area(self): return 3.14159 * self.r * self.r
+
+class Square:
+    def __init__(self, s): self.s = s
+    def area(self): return self.s * self.s
+
+def total_area(shapes):
+    return sum(s.area() for s in shapes)
+```
+----------------------------------------------------------------------
+147. Explain dunder methods: implement `__len__` for a custom container.
+```python
+class Bag:
+    def __init__(self):
+        self.items = []
+    def __len__(self):
+        return len(self.items)
+```
+----------------------------------------------------------------------
+148. Create an iterator class (manual) that iterates over a list (implements `__iter__` and `__next__`).
+```python
+class MyIter:
+    def __init__(self, data):
+        self.data = data
+        self.i = 0
+    def __iter__(self):
+        return self
+    def __next__(self):
+        if self.i >= len(self.data):
+            raise StopIteration
+        v = self.data[self.i]
+        self.i += 1
+        return v
+```
+----------------------------------------------------------------------
+149. Use `abc.ABC` and `@abstractmethod` to define an interface-like base class.
+```python
+from abc import ABC, abstractmethod
+
+class Shape(ABC):
+    @abstractmethod
+    def area(self): ...
+```
+----------------------------------------------------------------------
+150. Explain method resolution order (MRO) briefly and show how multiple inheritance picks methods.
+Python uses C3 linearization. You can inspect with `Class.mro()`.
+
+```python
+class A: 
+    def f(self): return "A"
+class B(A): pass
+class C(A): 
+    def f(self): return "C"
+class D(B, C): pass
+print(D().f())   # C (from MRO)
+print(D.mro())
+```
+----------------------------------------------------------------------
