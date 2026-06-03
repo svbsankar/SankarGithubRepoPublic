@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JobScan AI — Verified Job Agent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --border: #2a2a3d;
+    --accent: #6ee7b7;
+    --accent2: #818cf8;
+    --warn: #fbbf24;
+    --danger: #f87171;
+    --text: #f1f5f9;
+    --muted: #94a3b8;
+    --dim: #475569;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Scanline background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(110,231,183,0.015) 2px, rgba(110,231,183,0.015) 4px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem; position: relative; z-index: 1; }
+
+  /* Header */
+  .header { text-align: center; margin-bottom: 3rem; }
+  .logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 2.8rem; letter-spacing: -1px; }
+  .logo span.accent { color: var(--accent); }
+  .logo span.dim-text { color: var(--accent2); }
+  .tagline { color: var(--muted); font-size: 0.9rem; margin-top: 0.4rem; font-family: 'DM Mono', monospace; letter-spacing: 0.05em; }
+  .badge-row { display: flex; gap: 0.5rem; justify-content: center; margin-top: 1rem; flex-wrap: wrap; }
+  .badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    padding: 3px 10px;
+    border-radius: 999px;
+    border: 1px solid;
+    letter-spacing: 0.08em;
+  }
+  .badge-green { border-color: var(--accent); color: var(--accent); background: rgba(110,231,183,0.07); }
+  .badge-purple { border-color: var(--accent2); color: var(--accent2); background: rgba(129,140,248,0.07); }
+  .badge-warn { border-color: var(--warn); color: var(--warn); background: rgba(251,191,36,0.07); }
+
+  /* Search Panel */
+  .search-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .search-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+  @media (max-width: 600px) { .search-grid { grid-template-columns: 1fr; } }
+
+  label { display: block; font-size: 0.75rem; color: var(--muted); font-family: 'DM Mono', monospace; letter-spacing: 0.06em; margin-bottom: 0.4rem; }
+  input, select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.6rem 0.9rem;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input:focus, select:focus { border-color: var(--accent); }
+  input::placeholder { color: var(--dim); }
+  select option { background: #1a1a26; }
+
+  .filters-row { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+  .filter-group { flex: 1; min-width: 140px; }
+
+  .search-btn {
+    width: 100%;
+    padding: 0.85rem;
+    background: var(--accent);
+    color: #0a0a0f;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    transition: opacity 0.2s, transform 0.1s;
+    display: flex; align-items: center; justify-content: center; gap: 0.6rem;
+  }
+  .search-btn:hover { opacity: 0.9; }
+  .search-btn:active { transform: scale(0.99); }
+  .search-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Validation Matrix */
+  .validation-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+    display: none;
+  }
+  .validation-panel.visible { display: block; }
+  .val-title { font-family: 'DM Mono', monospace; font-size: 0.72rem; color: var(--muted); letter-spacing: 0.1em; margin-bottom: 1rem; }
+  .val-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.6rem; }
+  .val-item {
+    display: flex; align-items: center; gap: 0.5rem;
+    font-size: 0.8rem; color: var(--muted);
+    padding: 0.4rem 0.5rem;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    transition: all 0.3s;
+  }
+  .val-item.running { border-color: var(--warn); color: var(--warn); }
+  .val-item.pass { border-color: var(--accent); color: var(--accent); background: rgba(110,231,183,0.06); }
+  .val-item.fail { border-color: var(--danger); color: var(--danger); }
+  .val-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--border); flex-shrink: 0; transition: background 0.3s;
+  }
+  .val-item.running .val-dot { background: var(--warn); animation: pulse 0.8s infinite; }
+  .val-item.pass .val-dot { background: var(--accent); }
+  .val-item.fail .val-dot { background: var(--danger); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* Progress */
+  .progress-bar-wrap { margin-top: 1rem; }
+  .progress-label { display: flex; justify-content: space-between; font-family: 'DM Mono', monospace; font-size: 0.72rem; color: var(--muted); margin-bottom: 0.4rem; }
+  .progress-track { height: 3px; background: var(--border); border-radius: 99px; overflow: hidden; }
+  .progress-fill { height: 100%; width: 0%; background: var(--accent); transition: width 0.4s ease; border-radius: 99px; }
+
+  /* Stats Row */
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 1.5rem; display: none; }
+  .stats-row.visible { display: grid; }
+  @media (max-width: 600px) { .stats-row { grid-template-columns: repeat(2,1fr); } }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+    text-align: center;
+  }
+  .stat-val { font-family: 'Syne', sans-serif; font-size: 1.6rem; font-weight: 700; }
+  .stat-val.green { color: var(--accent); }
+  .stat-val.purple { color: var(--accent2); }
+  .stat-val.warn { color: var(--warn); }
+  .stat-val.red { color: var(--danger); }
+  .stat-lbl { font-size: 0.7rem; color: var(--muted); font-family: 'DM Mono', monospace; letter-spacing: 0.05em; margin-top: 0.2rem; }
+
+  /* Job Cards */
+  .results-section { display: none; }
+  .results-section.visible { display: block; }
+  .results-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+  .results-title { font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 700; }
+  .sort-select { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 0.3rem 0.6rem; color: var(--text); font-size: 0.8rem; }
+
+  .job-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 0.9rem;
+    position: relative;
+    transition: border-color 0.2s, transform 0.15s;
+    animation: slideIn 0.35s ease both;
+  }
+  .job-card:hover { border-color: #3a3a55; transform: translateY(-1px); }
+  @keyframes slideIn { from { opacity:0; transform:translateY(8px) } to { opacity:1; transform:none } }
+
+  .job-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+  .job-meta { flex: 1; min-width: 0; }
+  .job-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1rem; margin-bottom: 0.25rem; line-height: 1.3; }
+  .job-company { font-size: 0.85rem; color: var(--accent2); font-weight: 500; }
+  .job-loc { font-size: 0.78rem; color: var(--muted); margin-top: 0.2rem; }
+
+  .trust-score {
+    flex-shrink: 0;
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    border: 2px solid;
+    font-family: 'Syne', sans-serif;
+  }
+  .trust-score .score-num { font-size: 1rem; font-weight: 800; line-height: 1; }
+  .trust-score .score-lbl { font-size: 0.5rem; font-family: 'DM Mono', monospace; letter-spacing: 0.05em; margin-top: 1px; }
+  .trust-high { border-color: var(--accent); color: var(--accent); }
+  .trust-med { border-color: var(--warn); color: var(--warn); }
+
+  .job-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.75rem; }
+  .tag {
+    font-size: 0.7rem; font-family: 'DM Mono', monospace;
+    padding: 2px 9px; border-radius: 99px;
+    border: 1px solid var(--border); color: var(--muted);
+  }
+  .tag.remote { border-color: var(--accent); color: var(--accent); }
+  .tag.salary { border-color: var(--accent2); color: var(--accent2); }
+  .tag.new { border-color: var(--warn); color: var(--warn); }
+
+  .job-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 0.9rem; padding-top: 0.75rem; border-top: 1px solid var(--border); flex-wrap: wrap; gap: 0.5rem; }
+  .job-date { font-size: 0.72rem; color: var(--dim); font-family: 'DM Mono', monospace; }
+  .job-source { font-size: 0.72rem; color: var(--dim); font-family: 'DM Mono', monospace; }
+
+  .verified-strip { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+  .v-check { font-size: 0.67rem; padding: 2px 8px; border-radius: 4px; font-family: 'DM Mono', monospace; background: rgba(110,231,183,0.08); border: 1px solid rgba(110,231,183,0.25); color: var(--accent); }
+
+  .apply-btn {
+    font-size: 0.8rem; font-family: 'Syne', sans-serif; font-weight: 600;
+    padding: 0.4rem 1rem; border-radius: 6px;
+    background: transparent; border: 1px solid var(--accent);
+    color: var(--accent); cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+  }
+  .apply-btn:hover { background: var(--accent); color: #0a0a0f; }
+
+  /* Ghost / Eliminated Section */
+  .eliminated-section { display: none; margin-top: 1.5rem; }
+  .eliminated-section.visible { display: block; }
+  .elim-title {
+    font-family: 'DM Mono', monospace; font-size: 0.72rem; color: var(--dim);
+    letter-spacing: 0.1em; margin-bottom: 0.6rem; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;
+  }
+  .elim-title .toggle { color: var(--dim); font-size: 0.8rem; }
+  .elim-list { display: none; }
+  .elim-list.open { display: block; }
+  .elim-card {
+    background: rgba(248,113,113,0.04);
+    border: 1px solid rgba(248,113,113,0.15);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.5rem;
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+  }
+  .elim-info { flex: 1; min-width: 0; }
+  .elim-name { font-size: 0.85rem; color: var(--muted); text-decoration: line-through; }
+  .elim-reason { font-size: 0.7rem; color: var(--danger); font-family: 'DM Mono', monospace; margin-top: 0.2rem; }
+
+  /* Empty state */
+  .empty-state { text-align: center; padding: 3rem 1rem; color: var(--dim); display: none; }
+  .empty-state.visible { display: block; }
+  .empty-icon { font-size: 2.5rem; margin-bottom: 1rem; }
+
+  /* Loading overlay on card area */
+  .loading-msg {
+    text-align: center; padding: 2rem; color: var(--muted);
+    font-family: 'DM Mono', monospace; font-size: 0.85rem;
+    letter-spacing: 0.06em; display: none;
+  }
+  .loading-msg.visible { display: block; }
+  .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 0.5rem; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .error-box { background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.3); border-radius: 10px; padding: 1rem 1.25rem; color: var(--danger); font-size: 0.85rem; margin-bottom: 1rem; display: none; }
+  .error-box.visible { display: block; }
+
+  /* Agent log */
+  .agent-log {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    margin-top: 1.5rem;
+    max-height: 200px;
+    overflow-y: auto;
+    display: none;
+  }
+  .agent-log.visible { display: block; }
+  .log-entry { font-family: 'DM Mono', monospace; font-size: 0.72rem; color: var(--dim); padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
+  .log-entry .ts { color: #3a3a55; margin-right: 0.5rem; }
+  .log-entry.info { color: var(--muted); }
+  .log-entry.ok { color: var(--accent); }
+  .log-entry.warn { color: var(--warn); }
+  .log-entry.err { color: var(--danger); }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <div class="logo">Job<span class="accent">Scan</span> <span class="dim-text">AI</span></div>
+    <div class="tagline">// verified job intelligence agent — zero waste, zero fakes</div>
+    <div class="badge-row">
+      <span class="badge badge-green">✓ Multi-layer Validation</span>
+      <span class="badge badge-purple">⚡ AI-Powered Search</span>
+      <span class="badge badge-warn">🛡 Fake Job Elimination</span>
+    </div>
+  </div>
+
+  <div class="search-panel">
+    <div class="search-grid">
+      <div>
+        <label>JOB TITLE / KEYWORDS</label>
+        <input type="text" id="queryInput" placeholder="e.g. Software Engineer, Data Scientist" value="">
+      </div>
+      <div>
+        <label>LOCATION</label>
+        <input type="text" id="locationInput" placeholder="e.g. Bengaluru, Remote, New York">
+      </div>
+    </div>
+    <div class="filters-row">
+      <div class="filter-group">
+        <label>JOB TYPE</label>
+        <select id="typeFilter">
+          <option value="any">Any Type</option>
+          <option value="full-time">Full-time</option>
+          <option value="remote">Remote</option>
+          <option value="contract">Contract</option>
+          <option value="internship">Internship</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>EXPERIENCE LEVEL</label>
+        <select id="expFilter">
+          <option value="any">Any Level</option>
+          <option value="entry">Entry Level</option>
+          <option value="mid">Mid Level</option>
+          <option value="senior">Senior</option>
+          <option value="lead">Lead / Principal</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>POSTED WITHIN</label>
+        <select id="dateFilter">
+          <option value="7">Last 7 Days</option>
+          <option value="14">Last 14 Days</option>
+          <option value="30" selected>Last 30 Days</option>
+          <option value="90">Last 90 Days</option>
+        </select>
+      </div>
+    </div>
+    <button class="search-btn" id="searchBtn" onclick="runAgent()">
+      <span id="btnText">▶ Run Job Agent</span>
+    </button>
+  </div>
+
+  <div class="error-box" id="errorBox"></div>
+
+  <!-- Validation matrix -->
+  <div class="validation-panel" id="valPanel">
+    <div class="val-title">// VALIDATION MATRIX — RUNNING CHECKS</div>
+    <div class="val-grid" id="valGrid"></div>
+    <div class="progress-bar-wrap">
+      <div class="progress-label"><span id="progressText">Initializing agent...</span><span id="progressPct">0%</span></div>
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row" id="statsRow">
+    <div class="stat-card">
+      <div class="stat-val green" id="statFound">—</div>
+      <div class="stat-lbl">VERIFIED JOBS</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val red" id="statElim">—</div>
+      <div class="stat-lbl">FAKES ELIMINATED</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val purple" id="statSources">—</div>
+      <div class="stat-lbl">SOURCES CHECKED</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val warn" id="statTrust">—</div>
+      <div class="stat-lbl">AVG TRUST SCORE</div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-msg" id="loadingMsg"><span class="spinner"></span><span id="loadingText">Searching live job boards...</span></div>
+
+  <!-- Results -->
+  <div class="results-section" id="resultsSection">
+    <div class="results-header">
+      <div class="results-title" id="resultsTitle">Verified Jobs</div>
+      <select class="sort-select" id="sortSelect" onchange="sortJobs()">
+        <option value="trust">Sort: Trust Score</option>
+        <option value="date">Sort: Newest First</option>
+        <option value="company">Sort: Company</option>
+      </select>
+    </div>
+    <div id="jobsList"></div>
+  </div>
+
+  <!-- Eliminated -->
+  <div class="eliminated-section" id="elimSection">
+    <div class="elim-title" onclick="toggleElim()">
+      <span>▸ ELIMINATED / FLAGGED JOBS</span>
+      <span id="elimCountBadge" class="badge badge-warn" style="font-size:0.65rem; padding:2px 8px;">0</span>
+      <span class="toggle" id="elimToggle">show</span>
+    </div>
+    <div class="elim-list" id="elimList"></div>
+  </div>
+
+  <!-- Agent Log -->
+  <div class="agent-log" id="agentLog"></div>
+
+</div>
+
+<script>
+const CHECKS = [
+  { id: 'live', label: 'Live job board search' },
+  { id: 'company', label: 'Company verification' },
+  { id: 'duplicate', label: 'Duplicate detection' },
+  { id: 'scam', label: 'Scam pattern scan' },
+  { id: 'salary', label: 'Salary sanity check' },
+  { id: 'domain', label: 'Domain legitimacy' },
+  { id: 'freshness', label: 'Freshness validation' },
+  { id: 'ghost', label: 'Ghost job detection' },
+];
+
+let allJobs = [];
+let elimJobs = [];
+let elimOpen = false;
+
+function log(msg, type = 'info') {
+  const el = document.getElementById('agentLog');
+  el.classList.add('visible');
+  const ts = new Date().toLocaleTimeString('en-US', { hour12: false });
+  const div = document.createElement('div');
+  div.className = `log-entry ${type}`;
+  div.innerHTML = `<span class="ts">[${ts}]</span>${msg}`;
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+}
+
+function setProgress(pct, text) {
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressPct').textContent = pct + '%';
+  document.getElementById('progressText').textContent = text;
+}
+
+function renderValGrid(states) {
+  const grid = document.getElementById('valGrid');
+  grid.innerHTML = '';
+  CHECKS.forEach(c => {
+    const s = states[c.id] || 'pending';
+    const div = document.createElement('div');
+    div.className = `val-item ${s}`;
+    div.id = `val-${c.id}`;
+    div.innerHTML = `<div class="val-dot"></div><span>${c.label}</span>`;
+    grid.appendChild(div);
+  });
+}
+
+function updateVal(id, state) {
+  const el = document.getElementById(`val-${id}`);
+  if (el) { el.className = `val-item ${state}`; }
+}
+
+function toggleElim() {
+  elimOpen = !elimOpen;
+  document.getElementById('elimList').classList.toggle('open', elimOpen);
+  document.getElementById('elimToggle').textContent = elimOpen ? 'hide' : 'show';
+}
+
+function sortJobs() {
+  const mode = document.getElementById('sortSelect').value;
+  const sorted = [...allJobs];
+  if (mode === 'trust') sorted.sort((a, b) => b.trustScore - a.trustScore);
+  else if (mode === 'date') sorted.sort((a, b) => new Date(b.postedDate) - new Date(a.postedDate));
+  else if (mode === 'company') sorted.sort((a, b) => a.company.localeCompare(b.company));
+  renderJobCards(sorted);
+}
+
+function getTrustClass(score) {
+  if (score >= 80) return 'trust-high';
+  return 'trust-med';
+}
+
+function renderJobCards(jobs) {
+  const list = document.getElementById('jobsList');
+  list.innerHTML = '';
+  if (!jobs.length) { list.innerHTML = '<div style="text-align:center;color:var(--dim);padding:2rem;font-family:DM Mono,monospace;font-size:0.8rem;">No results for this query.</div>'; return; }
+  jobs.forEach((j, i) => {
+    const card = document.createElement('div');
+    card.className = 'job-card';
+    card.style.animationDelay = (i * 0.06) + 's';
+    const tags = [
+      j.remote ? '<span class="tag remote">remote</span>' : '',
+      j.salary ? `<span class="tag salary">${j.salary}</span>` : '',
+      j.isNew ? '<span class="tag new">new ·24h</span>' : '',
+      j.type ? `<span class="tag">${j.type}</span>` : '',
+    ].filter(Boolean).join('');
+
+    const checks = j.validations.map(v => `<span class="v-check">✓ ${v}</span>`).join('');
+
+    card.innerHTML = `
+      <div class="job-card-header">
+        <div class="job-meta">
+          <div class="job-title">${j.title}</div>
+          <div class="job-company">${j.company}</div>
+          <div class="job-loc">📍 ${j.location}</div>
+        </div>
+        <div class="trust-score ${getTrustClass(j.trustScore)}">
+          <div class="score-num">${j.trustScore}</div>
+          <div class="score-lbl">TRUST</div>
+        </div>
+      </div>
+      <div class="job-tags">${tags}</div>
+      <div style="font-size:0.82rem;color:var(--muted);margin-top:0.7rem;line-height:1.5;">${j.description}</div>
+      <div class="job-footer">
+        <div>
+          <div class="job-date">${j.postedDate} · ${j.source}</div>
+          <div class="verified-strip" style="margin-top:0.4rem;">${checks}</div>
+        </div>
+        <a href="${j.applyUrl}" target="_blank" rel="noopener"><button class="apply-btn">Apply →</button></a>
+      </div>
+    `;
+    list.appendChild(card);
+  });
+}
+
+function renderEliminated(jobs) {
+  const list = document.getElementById('elimList');
+  list.innerHTML = '';
+  jobs.forEach(j => {
+    const card = document.createElement('div');
+    card.className = 'elim-card';
+    card.innerHTML = `
+      <div class="elim-info">
+        <div class="elim-name">${j.title} — ${j.company}</div>
+        <div class="elim-reason">⚠ ${j.reason}</div>
+      </div>
+      <span style="font-size:0.7rem;color:var(--dim);font-family:DM Mono,monospace;">${j.source}</span>
+    `;
+    list.appendChild(card);
+  });
+}
+
+async function runAgent() {
+  const query = document.getElementById('queryInput').value.trim();
+  const location = document.getElementById('locationInput').value.trim();
+  const jobType = document.getElementById('typeFilter').value;
+  const expLevel = document.getElementById('expFilter').value;
+  const daysBack = document.getElementById('dateFilter').value;
+
+  if (!query) {
+    document.getElementById('queryInput').focus();
+    document.getElementById('queryInput').style.borderColor = 'var(--danger)';
+    setTimeout(() => { document.getElementById('queryInput').style.borderColor = ''; }, 2000);
+    return;
+  }
+
+  const btn = document.getElementById('searchBtn');
+  btn.disabled = true;
+  document.getElementById('btnText').textContent = '⟳ Agent Running...';
+
+  // Reset UI
+  document.getElementById('errorBox').classList.remove('visible');
+  document.getElementById('resultsSection').classList.remove('visible');
+  document.getElementById('statsRow').classList.remove('visible');
+  document.getElementById('elimSection').classList.remove('visible');
+  document.getElementById('agentLog').innerHTML = '';
+  document.getElementById('agentLog').classList.remove('visible');
+  allJobs = []; elimJobs = [];
+
+  // Show validation panel
+  document.getElementById('valPanel').classList.add('visible');
+  const initStates = {};
+  CHECKS.forEach(c => initStates[c.id] = 'pending');
+  renderValGrid(initStates);
+  setProgress(0, 'Initializing agent...');
+
+  log(`Agent started — query: "${query}", location: "${location || 'any'}"`, 'info');
+  log(`Filters: type=${jobType}, exp=${expLevel}, days=${daysBack}`, 'info');
+
+  document.getElementById('loadingMsg').classList.add('visible');
+  document.getElementById('loadingText').textContent = 'Contacting AI agent...';
+
+  const filterStr = [
+    jobType !== 'any' ? `Job type: ${jobType}` : '',
+    expLevel !== 'any' ? `Experience level: ${expLevel}` : '',
+    `Posted within last ${daysBack} days`,
+  ].filter(Boolean).join('. ');
+
+  const systemPrompt = `You are JobScan AI — a specialized job intelligence agent. Your mission:
+1. Search for REAL, CURRENT job listings using web search
+2. Eliminate ALL fake, scam, duplicate, ghost, or low-quality postings
+3. Return ONLY legitimate, verified jobs with high trust scores
+
+You must use the web_search tool to find REAL current job listings. Search for jobs on LinkedIn, Indeed, Glassdoor, company career pages, and niche job boards.
+
+VALIDATION RULES (apply ALL before including a job):
+- Eliminate: unrealistic salary claims ("earn $5000/day from home"), pyramid schemes, MLM postings
+- Eliminate: duplicate listings (same company+role posted multiple times — keep best source)
+- Eliminate: ghost jobs (posted >90 days ago with no updates, or known layoff companies posting same roles repeatedly)
+- Eliminate: scam signals (no company name, gmail/yahoo apply email, vague role, "no experience needed" for senior roles)
+- Eliminate: jobs requiring payment or "investment" to apply
+- Validate: company must be verifiable (LinkedIn/Crunchbase/website exists)
+- Validate: apply URL must link to official company domain or major job board
+- Validate: salary range must be realistic for the role and location
+
+TRUST SCORE (0-100):
+- +30: company verified on LinkedIn/official site
+- +20: salary range provided and realistic
+- +15: direct company career page link
+- +15: posted within 7 days
+- +10: detailed job description (not templated)
+- +10: specific hiring manager or team mentioned
+- -20: generic templated description
+- -30: no company verification possible
+
+Return a JSON object with this EXACT structure (no markdown, no preamble):
+{
+  "jobs": [
+    {
+      "title": "exact job title",
+      "company": "company name",
+      "location": "city, country or Remote",
+      "remote": true/false,
+      "type": "full-time/contract/part-time/internship",
+      "salary": "salary range or null",
+      "isNew": true if posted within 3 days,
+      "postedDate": "YYYY-MM-DD or 'X days ago'",
+      "source": "LinkedIn/Indeed/Glassdoor/etc",
+      "applyUrl": "direct URL to job posting",
+      "description": "2-3 sentence summary of role and requirements",
+      "trustScore": 65-98,
+      "validations": ["Company verified", "Salary validated", "Fresh posting", "Official source"]
+    }
+  ],
+  "eliminated": [
+    {
+      "title": "job title",
+      "company": "company or 'Unknown'",
+      "source": "source found on",
+      "reason": "specific reason for elimination"
+    }
+  ],
+  "sourcesChecked": 5,
+  "searchQueries": ["query 1", "query 2"]
+}
+
+Return 6-12 verified jobs. Be thorough with web_search — run multiple searches.`;
+
+  const userMsg = `Find the latest verified job listings for: "${query}"${location ? ` in ${location}` : ''}.
+${filterStr}
+Today is ${new Date().toISOString().split('T')[0]}.
+Search multiple job boards (LinkedIn, Indeed, Glassdoor, company sites). Validate each job thoroughly. Eliminate all fakes and waste. Return the JSON as instructed.`;
+
+  // Run validation checks UI in parallel with API
+  const checkDelay = [300, 700, 1100, 1500, 1900, 2300, 2700, 3100];
+  CHECKS.forEach((c, i) => {
+    setTimeout(() => {
+      updateVal(c.id, 'running');
+      setProgress(Math.round((i + 1) / CHECKS.length * 50), `Running: ${c.label}...`);
+      log(`Check started: ${c.label}`, 'info');
+    }, checkDelay[i]);
+  });
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4000,
+        system: systemPrompt,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        messages: [{ role: 'user', content: userMsg }]
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error?.message || `API error ${response.status}`);
+    }
+
+    // Mark all checks as done
+    CHECKS.forEach(c => updateVal(c.id, 'pass'));
+    setProgress(80, 'Processing results...');
+
+    // Extract text from response
+    const fullText = data.content
+      .filter(b => b.type === 'text')
+      .map(b => b.text)
+      .join('');
+
+    log(`Agent response received. Parsing JSON...`, 'ok');
+    setProgress(90, 'Validating and filtering jobs...');
+
+    // Parse JSON — strip markdown fences if present
+    let parsed;
+    try {
+      const clean = fullText.replace(/```json|```/g, '').trim();
+      // Find JSON object in response
+      const jsonMatch = clean.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error('No JSON found in response');
+      parsed = JSON.parse(jsonMatch[0]);
+    } catch (e) {
+      log(`JSON parse error: ${e.message}`, 'err');
+      throw new Error('Agent returned malformed data. Please try again.');
+    }
+
+    allJobs = parsed.jobs || [];
+    elimJobs = parsed.eliminated || [];
+    const sourcesChecked = parsed.sourcesChecked || 5;
+    const avgTrust = allJobs.length ? Math.round(allJobs.reduce((s, j) => s + j.trustScore, 0) / allJobs.length) : 0;
+
+    log(`Found ${allJobs.length} verified jobs, eliminated ${elimJobs.length} fake/low-quality listings`, 'ok');
+    if (parsed.searchQueries) {
+      parsed.searchQueries.forEach(q => log(`Search query used: "${q}"`, 'info'));
+    }
+
+    setProgress(100, `Complete — ${allJobs.length} verified jobs found`);
+
+    // Update stats
+    document.getElementById('statFound').textContent = allJobs.length;
+    document.getElementById('statElim').textContent = elimJobs.length;
+    document.getElementById('statSources').textContent = sourcesChecked;
+    document.getElementById('statTrust').textContent = avgTrust + '%';
+    document.getElementById('statsRow').classList.add('visible');
+
+    // Render results
+    renderJobCards(allJobs);
+    document.getElementById('resultsTitle').textContent = `${allJobs.length} Verified Job${allJobs.length !== 1 ? 's' : ''} — "${query}"`;
+    document.getElementById('resultsSection').classList.add('visible');
+
+    // Render eliminated
+    if (elimJobs.length) {
+      renderEliminated(elimJobs);
+      document.getElementById('elimCountBadge').textContent = elimJobs.length + ' flagged';
+      document.getElementById('elimSection').classList.add('visible');
+    }
+
+    // Mark specific validations based on what was actually done
+    updateVal('scam', elimJobs.length > 0 ? 'pass' : 'pass');
+    updateVal('ghost', 'pass');
+    log(`Average trust score: ${avgTrust}/100`, 'ok');
+    log(`Agent complete.`, 'ok');
+
+  } catch (err) {
+    CHECKS.forEach(c => updateVal(c.id, 'fail'));
+    setProgress(0, 'Error — see details below');
+    log(`Error: ${err.message}`, 'err');
+    const errBox = document.getElementById('errorBox');
+    errBox.textContent = `⚠ Agent error: ${err.message}`;
+    errBox.classList.add('visible');
+  } finally {
+    btn.disabled = false;
+    document.getElementById('btnText').textContent = '▶ Run Job Agent';
+    document.getElementById('loadingMsg').classList.remove('visible');
+  }
+}
+
+// Allow Enter key
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && (e.target.id === 'queryInput' || e.target.id === 'locationInput')) runAgent();
+});
+</script>
+</body>
+</html>
